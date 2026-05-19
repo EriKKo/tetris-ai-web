@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tetris AI</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #161616;
+    --text: #eee;
+    --muted: #888;
+    --accent: #4af;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #0a0a0a, #050505);
+    color: var(--text);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .app {
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    align-items: flex-start;
+  }
+  .board-wrap {
+    border: 2px solid #333;
+    background: #000;
+    box-shadow: 0 0 24px rgba(0,0,0,0.6);
+  }
+  canvas { display: block; }
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 140px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid #2a2a2a;
+    padding: 12px;
+  }
+  .panel h2 {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+  .panel canvas { background: #0a0a0a; }
+  .stats div { display: flex; justify-content: space-between; font-size: 14px; padding: 2px 0; }
+  .stats div span:first-child { color: var(--muted); }
+  .stats div span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }
+  .next-list { display: flex; flex-direction: column; gap: 6px; }
+  .controls button {
+    width: 100%;
+    background: #222;
+    color: var(--text);
+    border: 1px solid #333;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .controls button:hover { background: #2a2a2a; border-color: var(--accent); }
+  .status { color: var(--accent); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+  h1 { font-size: 18px; letter-spacing: 0.25em; text-transform: uppercase; margin: 0 0 12px; }
+  .credit { color: var(--muted); font-size: 11px; margin-top: 8px; }
+  .credit a { color: var(--accent); text-decoration: none; }
+
+  .speed-row { display: flex; align-items: center; gap: 8px; }
+  .speed-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .speed-row .val { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; font-size: 12px; color: var(--text); }
+  .penalty-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .penalty-row .label { color: var(--muted); font-size: 14px; flex: 1; }
+  .penalty-row .val { font-variant-numeric: tabular-nums; font-size: 14px; }
+  .penalty-dot { width: 12px; height: 12px; border-radius: 50%; background: #555; box-shadow: 0 0 6px rgba(255,255,255,0.1); transition: background 0.3s; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid #2a2a2a;
+    max-width: 640px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 24px 28px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  }
+  .modal h2 { font-size: 16px; letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 16px; color: var(--accent); font-weight: 600; }
+  .modal h3 { font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin: 20px 0 8px; font-weight: 600; }
+  .modal p { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0 0 10px; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .modal code { font-family: inherit; color: #ffd479; background: #222; padding: 1px 5px; border-radius: 2px; font-size: 12px; }
+  .modal ul { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.6; color: var(--text); padding-left: 18px; margin: 0 0 10px; }
+  .modal table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .modal table th, .modal table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #222; }
+  .modal table th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+  .modal table td:last-child { text-align: right; color: #ffd479; font-variant-numeric: tabular-nums; }
+  .modal-close {
+    background: #222; color: var(--text); border: 1px solid #333;
+    padding: 6px 14px; font-family: inherit; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    margin-top: 16px;
+  }
+  .modal-close:hover { background: #2a2a2a; border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="side">
+      <h1>Tetris AI</h1>
+      <div class="panel">
+        <h2>Hold</h2>
+        <canvas id="hold"></canvas>
+      </div>
+      <div class="panel stats">
+        <h2>Stats</h2>
+        <div><span>Score</span><span id="score">0</span></div>
+        <div><span>Lines</span><span id="lines">0</span></div>
+        <div><span>Level</span><span id="level">1</span></div>
+        <div class="penalty-row">
+          <span class="label">Penalty</span>
+          <span class="val" id="penalty">0.0</span>
+          <span class="penalty-dot" id="penalty-dot"></span>
+        </div>
+        <div class="status" id="status">AI playing</div>
+      </div>
+      <div class="panel controls">
+        <h2>Controls</h2>
+        <div class="speed-row">
+          <input type="range" id="speed" min="0.25" max="4" step="0.05" value="1" />
+          <span class="val" id="speed-val">1.00×</span>
+        </div>
+        <button id="pause">Pause</button>
+        <button id="restart">Restart</button>
+        <button id="about">How it works</button>
+      </div>
+      <div class="credit">
+        AI by <a href="https://github.com/EriKKo/tetris-ai" target="_blank" rel="noopener">EriKKo</a>
+      </div>
+    </div>
+    <div class="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h2>Next</h2>
+        <div class="next-list">
+          <canvas class="next" id="next0"></canvas>
+          <canvas class="next" id="next1"></canvas>
+          <canvas class="next" id="next2"></canvas>
+          <canvas class="next" id="next3"></canvas>
+          <canvas class="next" id="next4"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="about-modal">
+    <div class="modal">
+      <h2>How the AI works</h2>
+      <p>
+        Every time a new piece spawns, the AI considers every legal placement —
+        each combination of <em>hold-swap</em> (yes/no), <em>column</em> (0–9),
+        and <em>rotation</em> (0–3). That's at most 80 candidates. For each
+        candidate it simulates dropping the piece straight down onto the
+        current board and scores the resulting position with a
+        <em>penalty function</em>. The placement with the lowest penalty wins.
+      </p>
+      <p>
+        The search depth is 1 ply — it doesn't look ahead at the next piece.
+        Two hand-coded shortcuts come first: the very first piece is always
+        swapped into the hold slot, and an I-piece is dropped vertically into
+        column 8 whenever every other column is already at least 4 rows
+        higher (preserving a "Tetris well" on the right edge).
+      </p>
+
+      <h2>The penalty function</h2>
+      <p>
+        The score is a sum of penalty terms, each multiplied by a weight.
+        Lower is better — a perfectly flat empty board scores 0.
+      </p>
+      <ul>
+        <li><strong>Height difference</strong> — the gap between the tallest
+        and shortest column (ignoring the rightmost). Encourages a flat
+        surface.</li>
+        <li><strong>Covered cells</strong> — empty cells with at least one
+        block above them in the same column. These are unreachable holes;
+        weighted heavily.</li>
+        <li><strong>Covered (rightmost column)</strong> — same idea but
+        penalized harder, because the right column is reserved for the
+        I-well.</li>
+        <li><strong>Height (rightmost column)</strong> — small penalty for
+        any height in the rightmost column. Keeps the well open.</li>
+        <li><strong>Consecutive change</strong> — penalizes two adjacent
+        column-height changes in a row (a zigzag surface).</li>
+        <li><strong>Small pit</strong> — a single column that is at least 2
+        rows lower than both its neighbours (the minimum gap is exactly 2).
+        Hard to fill without an S/Z mistake.</li>
+        <li><strong>Big pit</strong> — same shape but the gap is 3+ rows
+        deep. Only an I-piece can fill it.</li>
+      </ul>
+
+      <h3>Current weights</h3>
+      <table>
+        <thead><tr><th>Weight</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>HEIGHT_DIFFERENCE_FACTOR</td><td>5.27</td></tr>
+          <tr><td>COVERED_PENALTY</td><td>19.65</td></tr>
+          <tr><td>COVER_RIGHTMOST_PENALTY</td><td>50.00</td></tr>
+          <tr><td>HEIGHT_RIGHTMOST_PENALTY</td><td>5.00</td></tr>
+          <tr><td>CONSECUTIVE_CHANGE_PENALTY</td><td>1.71</td></tr>
+          <tr><td>SMALL_PIT_PENALTY</td><td>5.60</td></tr>
+          <tr><td>BIG_PIT_PENALTY</td><td>22.46</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:12px; color: var(--muted); font-size: 12px;">
+        These weights were tuned by the original author with random search.
+        The <code>Penalty</code> readout in the stats panel shows the current
+        board's score using these weights — green is good, red is risky.
+      </p>
+
+      <button class="modal-close" id="about-close">Close</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { TetrisGame } from './game.js';
+
+    function newGame() {
+      const game = new TetrisGame({
+        boardCanvas: document.getElementById('board'),
+        nextCanvases: [0,1,2,3,4].map(i => document.getElementById('next' + i)),
+        holdCanvas: document.getElementById('hold'),
+        statsEl: {
+          score: document.getElementById('score'),
+          lines: document.getElementById('lines'),
+          level: document.getElementById('level'),
+          status: document.getElementById('status'),
+          penalty: document.getElementById('penalty'),
+          penaltyDot: document.getElementById('penalty-dot'),
+        },
+      });
+      game.setSpeed(parseFloat(speedEl.value));
+      game.start();
+      return game;
+    }
+    const speedEl = document.getElementById('speed');
+    const speedValEl = document.getElementById('speed-val');
+    function updateSpeedLabel(v) { speedValEl.textContent = v.toFixed(2) + '×'; }
+    updateSpeedLabel(parseFloat(speedEl.value));
+
+    let game = newGame();
+    speedEl.addEventListener('input', () => {
+      const v = parseFloat(speedEl.value);
+      updateSpeedLabel(v);
+      game.setSpeed(v);
+    });
+    document.getElementById('pause').addEventListener('click', () => game.togglePause());
+    document.getElementById('restart').addEventListener('click', () => { game.stop(); game = newGame(); });
+
+    const modal = document.getElementById('about-modal');
+    function openModal() { modal.classList.add('open'); }
+    function closeModal() { modal.classList.remove('open'); }
+    document.getElementById('about').addEventListener('click', openModal);
+    document.getElementById('about-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
+</body>
+</html>
