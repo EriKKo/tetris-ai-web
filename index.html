@@ -17,11 +17,16 @@
     margin: 0;
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: linear-gradient(180deg, #0a0a0a, #050505);
     color: var(--text);
     font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .page-header {
+    padding: 24px 24px 0;
+    text-align: center;
   }
   .app {
     display: flex;
@@ -120,12 +125,40 @@
     margin-top: 16px;
   }
   .modal-close:hover { background: #2a2a2a; border-color: var(--accent); }
+
+  @media (max-width: 720px) {
+    body { justify-content: flex-start; }
+    .page-header { padding: 12px 12px 0; }
+    h1 { font-size: 15px; letter-spacing: 0.22em; margin: 0; }
+    .app {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      width: 100%;
+    }
+    .app > .board-wrap { order: 1; max-width: 100%; }
+    .app > .side:last-of-type { order: 2; }
+    .app > .side:first-of-type { order: 3; }
+    .side { width: 100%; max-width: 320px; min-width: 0; gap: 12px; box-sizing: border-box; }
+    .panel { max-width: 100%; min-width: 0; box-sizing: border-box; }
+    #board { max-width: 100%; height: auto; }
+    .next-list { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; min-width: 0; max-width: 100%; padding-bottom: 4px; }
+    .next-list canvas { flex: 0 0 auto; }
+    .controls button { padding: 12px 8px; font-size: 13px; }
+    .speed-row input[type=range] { padding: 8px 0; }
+    .modal { margin: 12px; padding: 18px 20px; max-height: 88vh; }
+    .modal h2 { font-size: 14px; }
+    .modal p, .modal ul { font-size: 12px; }
+  }
 </style>
 </head>
 <body>
+  <header class="page-header">
+    <h1>Tetris AI</h1>
+  </header>
   <div class="app">
     <div class="side">
-      <h1>Tetris AI</h1>
       <div class="panel">
         <h2>Hold</h2>
         <canvas id="hold"></canvas>
